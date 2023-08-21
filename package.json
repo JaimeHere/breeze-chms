@@ -1,7 +1,7 @@
 {
-  "name": "breeze-chms",
-  "version": "0.2.6",
-  "description": "Provides convenient access to the Breeze REST API - https://app.breezechms.com/api.",
+  "name": "breeze-chms-minor-axios",
+  "version": "0.2.7",
+  "description": "Provides convenient access to the Breeze REST API - https://app.breezechms.com/api. This version uses a older version of axios.",
   "keywords": [
     "breeze",
     "chms"

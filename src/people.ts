@@ -193,8 +193,8 @@ export default class People {
             const { street_address, city, state, zip, latitude, longitude, is_private } = field;
             if (street_address) {
               profile.address = {
-                street1: street_address.split('<br />')[0]?.trim() || null,
-                street2: street_address.split('<br />')[1]?.trim() || null,
+                street1: street_address.split('<br />')[0] ? street_address.split('<br />')[0].trim() : null,
+                street2: street_address.split('<br />')[1] ? street_address.split('<br />')[1].trim() : null,
                 city: city.trim() || null,
                 state: state.trim() || null,
                 zip: zip.trim() || null,
