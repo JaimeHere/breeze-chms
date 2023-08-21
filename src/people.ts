@@ -208,7 +208,7 @@ export default class People {
           // Custom checkboxes ( joined into string separated by interpunct: ` · `)
           const match = lookupFields.find(({ field_id }) => field_id === detailId);
           // const match = customFieldIds[detailKey];
-          const value = field.name?.trim() || null;
+          const value = field.name ? field.name.trim() : null;
           if (!match || !value) continue;
           const key = match.key as LookupKeys<L>;
           const existingValue = profile.fields[key];
@@ -220,13 +220,13 @@ export default class People {
       // Custom/user-specified fields to match and assign
       const match = lookupFields.find(({ field_id }) => field_id === detailId);
       // Handle files types (prepend host and use 'detail.value' instead of 'detail. name')
-      if (match?.field_type === 'file' && typeof detail !== 'string' && detail.value) {
+      if (match && match.field_type === 'file' && typeof detail !== 'string' && detail.value) {
         const key = match.key as LookupKeys<L>;
         const value = BREEZE_FILES_URL + detail.value;
         profile.fields[key] = value;
         continue;
       }
-      const value = (typeof detail === 'string' ? detail?.trim() : detail?.name?.trim()) || null;
+      const value = detail ? (typeof detail === 'string' ? detail.trim() : detail.name ? detail.name.trim() : null) : null || null;
       if (!match || !value) continue;
       // For predefined fields (birthday, gender, status, campus, maritalStatus, anniversary, school, grade, or employer)
       const predefinedKey = match.key as typeof PREDEFINED_FIELDS[number];
@@ -307,7 +307,7 @@ export default class People {
         // Handle birthday
         case 'birthdate':
           if (typeof birthday === 'undefined') break;
-          const response = birthday?.trim() ?? '';
+          const response = birthday ? birthday.trim() : '';
           fields_json.push({ field_id, field_type: 'birthdate', response });
           continue profileFieldsLoop;
         // Handle all different parts of phone
@@ -326,7 +326,7 @@ export default class People {
         // Handle email address
         case 'email':
           if (typeof email === 'undefined') break;
-          const value = email?.trim() ?? '';
+          const value = email ? email.trim() : '';
           fields_json.push({
             field_id,
             field_type: 'email',
@@ -340,13 +340,13 @@ export default class People {
           const details = { street_address: '', city: '', state: '', zip: '' };
           if (address !== null) {
             const { street1, street2, city, state, zip } = address;
-            const line1 = street1?.trim() ?? '';
-            const line2 = street2?.trim() ?? '';
+            const line1 = street1 ? street1.trim() : '';
+            const line2 = street2 ? street2.trim() : '';
             const separator = line1 && line2 ? '<br />' : '';
             details.street_address = line1 + separator + line2;
-            details.city = city?.trim() ?? '';
-            details.state = state?.trim() ?? '';
-            details.zip = zip?.trim() ?? '';
+            details.city = city ? city.trim() : '';
+            details.state = state ? state.trim() : '';
+            details.zip = zip ? zip.trim() : '';
           }
           fields_json.push({ field_id, field_type: 'address', response: true, details });
           continue profileFieldsLoop;
@@ -384,12 +384,18 @@ export default class People {
           // Otherwise, lookup option id
           let response = '';
           const fuzzyValue = fuzzy(value);
-          let matchOption = options.find((option) => fuzzy(option.name) === fuzzyValue)?.option_id;
+          let option = options.find((option) => fuzzy(option.name) === fuzzyValue);
+          let matchOption;
+          if (option) {
+            matchOption = option.option_id;
+          }
           // For gender, 'm' should match male and 'f' should match female too!
           if (!matchOption && predefinedKey === 'gender') {
             const fuzzyValue = fuzzy(value.substr(0, 1));
-            matchOption = options.find((option) => fuzzy(option.name.substr(0, 1)) === fuzzyValue)
-              ?.option_id;
+            let option_obj = options.find((option) => fuzzy(option.name.substr(0, 1)) === fuzzyValue);
+            if (option_obj) {
+              matchOption = option_obj.option_id;
+            }
           }
           if (!matchOption) continue;
           response = matchOption;
@@ -405,7 +411,7 @@ export default class People {
       const fieldsValue = fields[profileField.key];
       // Multi-choice custom-fields
       if (['multiple_choice', 'dropdown'].includes(field_type)) {
-        const value = (Array.isArray(fieldsValue) ? fieldsValue[0] : fieldsValue?.trim()) || '';
+        const value = (Array.isArray(fieldsValue) ? fieldsValue[0] : fieldsValue ? fieldsValue.trim() : '') || '';
         // If value unset, clear value in Breeze
         if (!value) {
           const response = field_type === 'dropdown' ? 'BLANK' : '';
@@ -415,7 +421,11 @@ export default class People {
         // Otherwise, lookup option id
         let response = '';
         const fuzzyValue = fuzzy(value);
-        let matchOption = options.find((option) => fuzzy(option.name) === fuzzyValue)?.option_id;
+        let option = options.find((option) => fuzzy(option.name) === fuzzyValue);
+        let matchOption;
+        if (option) {
+          matchOption = option.option_id;
+        }
         if (!matchOption) continue;
         response = matchOption;
         fields_json.push({ field_id, field_type: 'radio', response });
@@ -425,14 +435,14 @@ export default class People {
       if (field_type === 'checkbox') {
         const clearCheckbox = Array.isArray(fieldsValue)
           ? fieldsValue.length === 0
-          : !fieldsValue?.trim();
+          : !(fieldsValue ? fieldsValue.trim() : false);
         if (clearCheckbox) {
           fields_json.push({ field_id, field_type, response: '' });
           continue;
         }
         const fuzzyValues = (Array.isArray(fieldsValue)
           ? fieldsValue
-          : fieldsValue?.split(' · ') || []
+          : fieldsValue ? fieldsValue.split(' · ') : [] || []
         ).map(fuzzy);
         for (const option of options) {
           const matchFound = fuzzyValues.includes(fuzzy(option.name));
@@ -442,7 +452,7 @@ export default class People {
         continue;
       }
       // If we got here, it's a custom, single-line response
-      const response = (Array.isArray(fieldsValue) ? fieldsValue[0] : fieldsValue?.trim()) || '';
+      const response = (Array.isArray(fieldsValue) ? fieldsValue[0] : fieldsValue ? fieldsValue.trim() : '') || '';
       fields_json.push({ field_id, field_type, response });
     }
     await this.apiUpdate(id, { fields_json });
@@ -644,18 +654,18 @@ interface FieldWithoutOptions extends ProfileField {
   field_type: //
   // Built-in/locked types
   | 'name'
-    | 'birthdate'
-    | 'grade'
-    | 'phone'
-    | 'email'
-    | 'address'
-    | 'family'
-    // Custom types
-    | 'paragraph'
-    | 'single_line'
-    | 'notes'
-    | 'date'
-    | 'file';
+  | 'birthdate'
+  | 'grade'
+  | 'phone'
+  | 'email'
+  | 'address'
+  | 'family'
+  // Custom types
+  | 'paragraph'
+  | 'single_line'
+  | 'notes'
+  | 'date'
+  | 'file';
   options: [];
 }
 interface FieldWithOptions extends ProfileField {
@@ -736,17 +746,17 @@ export interface BreezePersonDetail extends BreezePerson {
     [key: string]: //
     /** Phone numbers for this person (home, mobile, and work) */
     | [PhoneDetail<'home'>, PhoneDetail<'mobile'>, PhoneDetail<'work'>]
-      /** Primary email address for this person */
-      | [EmailDetail]
-      /** Primary/home address for this person */
-      | [AddressDetail]
-      /** Custom checkbox fields */
-      | { field_type: undefined; value: string; name: string }[]
-      /** Custom non-checkbox field values */
-      | { value: string; name: string }
-      /** IGNORE: Only here to satisfy prior detail values */
-      | string
-      | undefined;
+    /** Primary email address for this person */
+    | [EmailDetail]
+    /** Primary/home address for this person */
+    | [AddressDetail]
+    /** Custom checkbox fields */
+    | { field_type: undefined; value: string; name: string }[]
+    /** Custom non-checkbox field values */
+    | { value: string; name: string }
+    /** IGNORE: Only here to satisfy prior detail values */
+    | string
+    | undefined;
   };
   /** Array of family info */
   family: FamilyProfile[];
